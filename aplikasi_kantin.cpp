@@ -1,5 +1,7 @@
 /*
-    SEDANG DIKERJAKAN: siapkanDataMenu();
+    SEDANG DIKERJAKAN: 
+        siapkanDataMenu(); --> utama
+        gunakanModeAdmin;
 */
 
 
