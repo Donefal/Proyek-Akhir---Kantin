@@ -10,9 +10,11 @@ Kuasa mode admin dalam program ini juga dikurangi untuk menjaga program tetap si
 - Segala fungsi admin yang berhubungan dengan toko
 - Database kantin
 - Fungsi admin untuk edit menu
+- Menghapus penggunaan array pada struct (diganti)
 
 ### Fitur yang ditambahkan:
 - Database menu
+- Menambahkan penggunaan vector pada struct
 - Persiapan program dalam menyimpan database menu ke dalam vektor
 - Start program dalam mode admin
 - Start program dalam mode pembeli
