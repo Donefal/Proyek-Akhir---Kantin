@@ -1,19 +1,10 @@
-/*
-    SEDANG DIKERJAKAN: 
-        siapkanDataMenu(); --> utama
-        gunakanModeAdmin;
-*/
-
-
 #include <iostream>
 #include <conio.h>
 #include <fstream>
-#include <sstream>
+#include <vector>
 
 using namespace std;
-const int JUMLAH_SLOT_TOKO = 5;
-const int JUMLAH_SLOT_MENU = 5;
-int jumlahToko;
+const int MAX_HARGA = 1000000;
 
 struct sMenu
 {
@@ -21,126 +12,78 @@ struct sMenu
     int harga;
 };
 
-struct sToko
+struct sKantin
 {
     string nama;
     string id;
     string password;
-    bool isAktif = true;
-    sMenu menu[JUMLAH_SLOT_MENU];
+    vector<sMenu> menu;
 };
 
-struct sKantin
-{
-    string nama;
-    string password;
-    sToko toko[JUMLAH_SLOT_TOKO];
-};
 
-void bukaFileError(string namaFile){
-    cout << "Terdapat error dalam membuka file: " << namaFile << endl;
-    return;
-}
+//Untuk persiapan awal menjalankan program --> Kantin dulu baru menu
+void siapkanDataMenu(vector<sMenu> &menu){
+    string namaFile = "dataMenu.csv";
+    ifstream fileMenu(namaFile);
 
-
-//Untuk persiapan awal menjalankan program
-void siapkanDataMenu(sMenu menu[], string namaToko){
-    /* Catatan kebingungan
-        Untuk menyimpan menu agak tricky di bagian penamaan filenya
-        Ada 2 pilihan:
-            menuToko + i + .csv
-            menuToko_namaToko + ".csv"
-        Kyknya lebih bagus semisal pakai i, agar file dapat berulang kali dipakai
-    */
-
-    for (int i = 0; i < jumlahToko; i++)
+    if (!fileMenu.is_open())
     {
-        string namaFile = "menuToko_" + namaToko + ".csv";
-        ifstream listMenu(namaFile);
+        cout << "Terdapat error dalam membuka file: " << namaFile << endl;
+        return;
+    }
 
-        if (!listMenu)
-        {
-            bukaFileError(namaFile);
-            return;
+    string namaMenu, hargaMenu;
+
+    while (true)
+    {
+        getline(fileMenu, namaMenu, ',');
+        if (namaMenu == "END"){
+            break;
         }
-        
+
+        getline(fileMenu, hargaMenu, '\n');
+
+        menu.push_back({namaMenu, stoi(hargaMenu)});
     }
     
-
+    fileMenu.close();
 }
 
-void siapkanDataToko(sToko toko[]){
-    string namaFile = "listToko.csv";
-    ifstream listToko(namaFile);
-
-    if (!listToko.is_open())
-    {
-        bukaFileError(namaFile);
-        return;
-    }
-
-    int i; 
-    for (i = 0; i < jumlahToko; i++)
-    {
-        string namaToko, idToko, passwordToko;
-
-        getline(listToko, namaToko, ',');
-        getline(listToko, idToko, ',');
-        getline(listToko, passwordToko, '\n');
-
-        toko[i].nama = namaToko;
-        toko[i].id = idToko;
-        toko[i].password = passwordToko;
-
-        //siapkanDataMenu(toko[i].menu, toko[i].nama);
-    }
-
-    while (i < JUMLAH_SLOT_TOKO)
-    {
-       toko[i].isAktif = false;
-       i++;
-    }
-
-    listToko.close();
-}
-
+//Untuk persiapan awal menjalankan program --> Kantin dulu baru menu
 void siapkanDataKantin(sKantin &kantin){
-    string namaFile = "dataKantin.csv";
-    ifstream fileKantin(namaFile);
+    kantin.nama = "Kantin Firas";
+    kantin.id = "idkantin";
+    kantin.password = "passkantin";
 
-    if (!fileKantin.is_open())
-    {
-        bukaFileError(namaFile);
-        return;
-    }
+    siapkanDataMenu(kantin.menu);
+}
 
-    string namaKantin, passwordKantin, jumlahTokoKantin;
+//BELUM DIMULAI | Fungsi untuk save perubahan menu
+void saveDataMenu(vector<sMenu> &menu){
 
-    getline(fileKantin, namaKantin, ',');
-    getline(fileKantin, passwordKantin, ',');
-    getline(fileKantin, jumlahTokoKantin, '\n');
-
-    kantin.nama = namaKantin;
-    kantin.password = passwordKantin;
-    jumlahToko = stoi(jumlahTokoKantin);
-
-    siapkanDataToko(kantin.toko);
 }
 
 
-//Untuk input dari pengguna, sekaligus error handling
-int intUserInput(){
+//Untuk input bertipe int dari pengguna, sekaligus error handling
+int intUserInput(int pilihanMaksimal){
     int input;
-    while (true)
+    bool sudahBenar = false;
+    
+    while (!sudahBenar)
     {
         cin >> input;
         if (cin.fail())
         {
+            cout << "Pilihan tidak sesuai! Coba lagi" << endl;
             cin.clear();
             cin.ignore(100, '\n');
-        } else {
+        } else if (input < 1 || input > pilihanMaksimal)
+        {
+            cout << "Pilihan tidak sesuai! Coba lagi" << endl;
             cin.ignore(100, '\n');
-            break;
+        } else{
+            cin.ignore(100, '\n');
+            sudahBenar = true;
         }
         
     }
@@ -148,6 +91,7 @@ int intUserInput(){
     return input;
 }
 
+//Untuk input bertipe string dari pengguna, sekaligus error handling
 string strUserInput(){
     string input;
     while (true)
@@ -155,6 +99,7 @@ string strUserInput(){
         getline(cin, input);
         if (cin.fail())
         {
+            cout << "Input tidak sesuai! Coba lagi" << endl;
             cin.clear();
             cin.ignore(100,'\n');
         } else {
@@ -166,61 +111,242 @@ string strUserInput(){
 }
 
 
-void outputDataToko(sToko toko[]){
-    for (int i = 0; i < JUMLAH_SLOT_TOKO; i++)
+//Output data menu
+void outputMenu(vector<sMenu> menu){
+    int banyakMenu = menu.size();
+
+    cout << "Daftar menu: " << endl;
+    for (int i = 0; i < banyakMenu; i++)
     {
-        if (!toko[i].isAktif)
-        {
-            cout << "Slot Toko Kosong" << endl;
-            continue;
-        }
-        
-        cout << "Nama Toko: " << toko[i].nama << endl;
+        cout << i+1 << ". " << menu[i].nama << "\t\t| Rp." << menu[i].harga << endl;
     }
-    
 }
 
-void gunakanModeAdmin(sKantin &kantin){
+
+//Kuasa admin --> Menambahkan menu
+void tambahkanMenu(vector<sMenu> &menu){
+    string namaMenu;
+    int hargaMenu;
+
+    cout << "TAMBAHKAN MENU" << endl;
+    cout << "Nama menu: "; 
+    namaMenu = strUserInput();
+
+    cout << "Harga menu: ";
+    hargaMenu = intUserInput(MAX_HARGA);
+
+    menu.push_back({namaMenu, hargaMenu});
+    cout << "Menu ditambahkan! " << endl;
+}
+
+//Kuasa admin --> Menghapus menu
+void hapusMenu(vector<sMenu> &menu){
+    int yangDihapus;
+
+    cout << "HAPUS MENU" << endl;
+    cout << "Pilih menu untuk dihapus: ";
+    yangDihapus = intUserInput(menu.size()) - 1;
+
+    cout << "---------------------------------------" << endl;
+    cout << yangDihapus+1 << ". " << menu[yangDihapus].nama << " Rp." << menu[yangDihapus].harga << " dihapus!" << endl;
+    cout << "---------------------------------------" << endl;
+
+    menu.erase(menu.begin() + yangDihapus);
+}
+
+
+//Kuasa pembeli --> Print struk setelah pilih menu
+void printStrukPembelian(vector<int> keranjang, string nama){
+    int banyakItem = keranjang.size();
+
+    cout << "Intinya mah nanti ada format struk pembeliannya" << endl;
+    cout << "Index item yang dibeli: ";
+    for (int i = 0; i < banyakItem; i++)
+    {
+        cout << keranjang[i] << " ";
+    }
+    cout << endl;
+    
+    /*
+        Ini nanti pokoknya diformatin aja sebagus mungkin
+    */
+}
+
+//Kuasa pembeli --> Pilih menu untuk dibeli
+void beliMenu(vector<sMenu> menu, string nama){
+    int yangDibeli;
+    vector<int> keranjang;
+    
+    int banyakMenu = menu.size();
     bool berhenti = false;
+
+    cout << "BELI MENU" << endl;
     while (!berhenti)
     {
-        cout << "\nSelamat Datang di " << kantin.nama << endl;
+        cout << "Pilih menu untuk dibeli (" << banyakMenu+1 << " untuk berhenti): ";
+        yangDibeli = intUserInput(banyakMenu+1);
+        if (yangDibeli == banyakMenu+1)
+        {
+            berhenti = false;
+            break;
+        }
+    
+        keranjang.push_back(yangDibeli-1);
+    }
+    
+    printStrukPembelian(keranjang, nama);
+
+}
+
+
+//Jalankan program dengan mode admin
+void modeAdmin(sKantin &kantin){
+    bool berhenti = false;
+    string id, password;
+
+    //Protokol login
+    while (!berhenti)
+    {
+        cout << endl;
+        cout << "Login sebagai Admin: " << endl;
+        cout << "ID: "; 
+        id = strUserInput();
+
+        cout << "Password: "; 
+        password = strUserInput();
+
+        if (id == kantin.id && password == kantin.password)
+        {
+            cout << "---------------------------------------" << endl;
+            cout << "Berhasil login!" << endl;
+            cout << "---------------------------------------" << endl;
+            cout << endl;
+            berhenti = true;
+        } else {
+            cout << "---------------------------------------" << endl;
+            cout << "ID atau Password salah!" << endl;
+            cout << "---------------------------------------" << endl;
+        }
+    }
+    
+    //////////////////////////////////////////////////////////////////////
+    //Menu admin
+    berhenti = false;
+    while (!berhenti)
+    {
+        cout << "Selamat Datang di " << kantin.nama << endl;
         cout << "---------------------------------------" << endl;
-        cout << "Pilih toko: " << endl;
-        getch();
+        outputMenu(kantin.menu);
+
+        cout << "---------------------------------------" << endl;
+        cout << "Pilih aksi:" << endl;
+        cout << "(1) Tambahkan menu" << endl;
+        cout << "(2) Hapus menu" << endl;
+        cout << "(3) Kembali" << endl;
+        cout << "---------------------------------------" << endl;
+        cout << "Pilihan anda: ";
+
+        switch (intUserInput(3))
+        {
+        case 1:
+            tambahkanMenu(kantin.menu);
+            break;
+        case 2:
+            hapusMenu(kantin.menu);
+            break;
+        case 3:
+            cout << "---------------------------------------" << endl;
+            cout << "Kembali ke menu awal..." << endl;
+            cout << "---------------------------------------" << endl;
+            berhenti = true;
+            break;
+        default:
+            break;
+        }
+        
+
     }
 }
 
+//Jalankan program dengan mode pembeli
+void modePembeli(sKantin kantin){
+    string nama;
+    bool berhenti = false;
+
+    cout << "Nama anda: ";
+    nama = strUserInput();
+
+    while (!berhenti)
+    {
+        cout << "\nSelamat Datang " << nama << " di " << kantin.nama << endl;
+        cout << "---------------------------------------" << endl;
+        outputMenu(kantin.menu);
+
+        cout << "---------------------------------------" << endl;
+        cout << "Pilih aksi: " << endl;
+        cout << "(1) Beli menu" << endl;
+        cout << "(2) Kembali" << endl;
+        cout << "---------------------------------------" << endl;
+        cout << "Pilihan anda: ";
+
+        switch (intUserInput(2))
+        {
+        case 1:
+            beliMenu(kantin.menu, nama);
+            break;
+        case 2:
+            cout << "---------------------------------------" << endl;
+            cout << "Kembali ke menu awal..." << endl;
+            cout << "---------------------------------------" << endl;
+            berhenti = true;
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+
+//Fungsi utama program
 int main(){
     sKantin kantin;
     siapkanDataKantin(kantin);
 
-    bool aksesAdmin = false;
-    int intInput = -1;
-    string strInput = "";
+    bool akhiriProgram = false;
 
-    
-    cout << "\nSelamat Datang di " << kantin.nama << endl;
-    /*
-    cout << "---------------------------------------" << endl;
-    cout << "Pilih Mode Akun: " << endl;
-    cout << "(1) Mode Admin" << endl;
-    cout << "(2) Mode Pembeli" << endl;
-
-    do
+    while (!akhiriProgram)
     {
-        intInput = intUserInput();
-        if (intInput == 1)
-        {
-            aksesAdmin = true;
-        } else if (intInput == 2)
-        {
-            aksesAdmin = false;
-        }
-    } while (intInput < 1 || intInput > 2);
-    */
+        cout << "\nSelamat Datang di " << kantin.nama << endl;
+        cout << "---------------------------------------" << endl;
+        cout << "Pilih Mode Akun: " << endl;
+        cout << "(1) Mode Admin" << endl;
+        cout << "(2) Mode Pembeli" << endl;
+        cout << "(3) Akhiri program"  << endl;
+        cout << "---------------------------------------" << endl;
+        cout << "Pilihan anda: ";
 
-    outputDataToko(kantin.toko);
+        switch (intUserInput(3))
+        {
+        case 1:
+            modeAdmin(kantin);
+            break;
+        case 2:
+            modePembeli(kantin);
+            break;
+        case 3:
+            cout << "saveProgress()" << endl;
+            cout << "---------------------------------------" << endl;
+            cout << "Menutup program..." << endl;
+            cout << "---------------------------------------" << endl;
+            akhiriProgram = true;
+        default:
+            break;
+        }
+    }
 
     getch();
+    
+
+    
+
 }
